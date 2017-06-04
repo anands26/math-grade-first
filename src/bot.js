@@ -27,19 +27,48 @@ bot.onEvent = function(session, message) {
 }
 
 function onMessage(session, message) {
-  welcome(session)
+  if (isNaN(message.body)) {
+    welcome(session)
+  } else {
+    if (session.get('answer') != '' && message.body == session.get('answer')) {
+      AnswerR(session)
+    }else if (session.get('answer') != '' && message.body != session.get('answer')) {
+      AnswerW(session)
+    }else {
+      welcome(session)
+    }
+  }
 }
 
 function onCommand(session, command) {
   switch (command.content.value) {
-    case 'ping':
-      pong(session)
+    case 'no':
+      no(session)
       break
     case 'count':
       count(session)
       break
+    case '1digitadds':
+      session.set('problems', '1digitadds')
+      puzzle(session)
+      break
+    case '2digitadds':
+      session.set('problems', '2digitadds')
+      puzzle(session)
+      break
+    case '1digitsubs':
+      session.set('problems', '1digitsubs')
+      puzzle(session)
+      break
+    case '2digitsubs':
+      session.set('problems', '2digitsubs')
+      puzzle(session)
+      break
     case 'donate':
       donate(session)
+      break
+    case 'seeanswer':
+      seeanswer(session)
       break
     }
 }
@@ -69,11 +98,62 @@ function onPayment(session, message) {
 // STATES
 
 function welcome(session) {
-  sendMessage(session, `Hello Token!`)
+  sendMessage(session, `Do you want to solve math problems? (Enter 'X' to change/stop.)`)
 }
 
-function pong(session) {
-  sendMessage(session, `Pong`)
+function no(session) {
+  session.set('answer', '')
+  sendMessageDonate(session, `Bye. See you again.`)
+}
+
+function puzzle(session) {
+  switch (session.get('problems')) {
+    case '1digitadds':
+      n1 = Math.floor(Math.random().toFixed(2)*10)
+      n2 = Math.floor(Math.random().toFixed(2)*10)
+      an = n1 + n2
+      messageP = n1.toString() + ' + ' + n2.toString()
+      break
+    case '2digitadds':
+      n1 = Math.floor(Math.random().toFixed(2)*100)
+      n2 = Math.floor(Math.random().toFixed(2)*100)
+      an = n1 + n2
+      messageP = n1.toString() + ' + ' + n2.toString()
+      break
+    case '1digitsubs':
+      n1 = Math.floor(Math.random().toFixed(2)*10)
+      n2 = Math.floor(Math.random().toFixed(2)*10)
+      if (n1 > n2){
+        an = n1 - n2
+        messageP = n1.toString() + ' - ' + n2.toString()
+      }else{
+        an = n2 - n1
+        messageP = n2.toString() + ' - ' + n1.toString()
+      }
+      break
+    case '2digitsubs':
+      n1 = Math.floor(Math.random().toFixed(2)*100)
+      n2 = Math.floor(Math.random().toFixed(2)*100)
+      if (n1 > n2){
+        an = n1 - n2
+        messageP = n1.toString() + ' - ' + n2.toString()
+      }else{
+        an = n2 - n1
+        messageP = n2.toString() + ' - ' + n1.toString()
+      }
+      break
+    }
+  session.set('answer', an.toString())
+  sendMessageSimple(session, messageP + ' = ?')
+}
+
+function AnswerR(session){
+  sendMessageSimple(session, `Correct.`)
+  puzzle(session)
+}
+
+function AnswerW(session){
+  sendMessageAnswerW(session, `Please try again. Or ..`)
 }
 
 // example of how to store state on each user
@@ -90,17 +170,53 @@ function donate(session) {
   })
 }
 
+function seeanswer(session){
+  sendMessageSimple(session, 'Correct answer is: ' + session.get('answer'))
+  puzzle(session)
+}
+
 // HELPERS
 
 function sendMessage(session, message) {
   let controls = [
-    {type: 'button', label: 'Ping', value: 'ping'},
-    {type: 'button', label: 'Count', value: 'count'},
-    {type: 'button', label: 'Donate', value: 'donate'}
+    {type: 'button', label: '1-digit additions', value: '1digitadds'},
+    {type: 'button', label: '2-digit additions', value: '2digitadds'},
+    {type: 'button', label: '1-digit subtractions', value: '1digitsubs'},
+    {type: 'button', label: '2-digit subtractions', value: '2digitsubs'},
+    {type: 'button', label: 'No', value: 'no'}
   ]
   session.reply(SOFA.Message({
     body: message,
     controls: controls,
-    showKeyboard: false,
+    showKeyboard: false
+  }))
+}
+
+function sendMessageDonate(session, message) {
+  let controls = [
+    {type: 'button', label: 'Please Donate', value: 'donate'}
+  ]
+  session.reply(SOFA.Message({
+    body: message,
+    controls: controls,
+    showKeyboard: false
+  }))
+}
+
+function sendMessageSimple(session, message) {
+  session.reply(SOFA.Message({
+    body: message,
+    showKeyboard: true
+  }))
+}
+
+function sendMessageAnswerW(session, message) {
+  let controls = [
+    {type: 'button', label: 'See Answer', value: 'seeanswer'}
+  ]
+  session.reply(SOFA.Message({
+    body: message,
+    controls: controls,
+    showKeyboard: false
   }))
 }
